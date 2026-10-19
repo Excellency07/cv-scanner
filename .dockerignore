@@ -1,0 +1,7 @@
+target/
+.git/
+.idea/
+*.iml
+.env
+# local developer config must not end up in the image; the docker profile is used instead
+src/main/resources/application.properties

@@ -2,71 +2,29 @@ package com.backend.cv_scanner.service;
 
 import com.backend.cv_scanner.dao.entity.CVFile;
 import com.backend.cv_scanner.dao.entity.Candidate;
-import com.backend.cv_scanner.dao.repository.jpa.CVFileRepository;
-import com.backend.cv_scanner.dao.repository.jpa.CandidateRepository;
 import com.backend.cv_scanner.model.dto.CandidateDetailsDto;
-import com.backend.cv_scanner.model.enums.CVFileStatus;
 import com.backend.cv_scanner.parser.CVTextExtractor;
 import com.backend.cv_scanner.parser.CandidateDetailsExtractor;
 import com.backend.cv_scanner.service.storage.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.UUID;
+import java.util.LinkedHashSet;
 
 @Service
 @RequiredArgsConstructor
 public class CVParsingService {
 
-    private final CVFileRepository cvFileRepository;
-    private final CandidateRepository candidateRepository;
     private final StorageService storageService;
     private final CVTextExtractor cvTextExtractor;
     private final CandidateDetailsExtractor candidateDetailsExtractor;
 
-    @Transactional
-    public Candidate process(UUID fileId) throws IOException {
-        CVFile file = cvFileRepository.findById(fileId)
-                .orElseThrow(() -> new IllegalArgumentException("CV file not found: " + fileId));
-
-        if (candidateRepository.existsByFileId(fileId))
-            throw new IllegalStateException("A candidate already exists for CV file: " + fileId);
-
-        try (InputStream inputStream = storageService.download(
-                file.getStorageFilename(),
-                file.getOriginalFilename()
-        )) {
-            String text = cvTextExtractor.extractText(
-                    inputStream,
-                    file.getOriginalFilename()
-            );
-
-            CandidateDetailsDto candidateDetails = candidateDetailsExtractor.extract(text);
-
-            Candidate candidate = new Candidate(
-                    candidateDetails.fullName(),
-                    candidateDetails.email(),
-                    candidateDetails.phone(),
-                    file
-            );
-
-            Candidate savedCandidate = candidateRepository.save(candidate);
-
-            file.setStatus(CVFileStatus.COMPLETED);
-            cvFileRepository.save(file);
-
-            return savedCandidate;
-
-        } catch (IOException | RuntimeException e) {
-            file.setStatus(CVFileStatus.FAILED);
-            cvFileRepository.save(file);
-            throw e;
-        }
-    }
-
+    /**
+     * Downloads the CV, extracts its text and builds an (unsaved) candidate.
+     * Saving is left to the batch writer so it happens inside the chunk transaction.
+     */
     public Candidate parse(CVFile cvFile) throws IOException {
 
         try (InputStream inputStream = storageService.download(
@@ -78,14 +36,21 @@ public class CVParsingService {
                     cvFile.getOriginalFilename()
             );
 
-            com.backend.cv_scanner.model.dto.CandidateDetailsDto candidateDetails = candidateDetailsExtractor.extract(text);
+            CandidateDetailsDto candidateDetails = candidateDetailsExtractor.extract(text);
 
-            return new Candidate(
+            Candidate candidate = new Candidate(
                     candidateDetails.fullName(),
                     candidateDetails.email(),
                     candidateDetails.phone(),
                     cvFile
             );
+            candidate.setYearsOfExperience(candidateDetails.yearsOfExperience());
+            candidate.setSkills(new LinkedHashSet<>(candidateDetails.skills()));
+            candidate.setLocation(candidateDetails.location());
+            candidate.setJobType(candidateDetails.jobType());
+            candidate.setJobLocationType(candidateDetails.jobLocationType());
+
+            return candidate;
         }
     }
 }

@@ -8,7 +8,7 @@ CREATE TABLE accounts
     password   VARCHAR(255) NOT NULL,
     enabled    BOOLEAN      NOT NULL,
     created_at TIMESTAMP(6) WITHOUT TIME ZONE,
-    roles      VARCHAR(255),
+    roles      VARCHAR(255)[],
     CONSTRAINT pk_accounts PRIMARY KEY (id)
 );
 

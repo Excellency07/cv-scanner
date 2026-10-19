@@ -44,7 +44,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Override
     public void deleteRefreshToken(String refreshToken) {
-        RefreshToken token = refreshTokenRepository.findByToken(refreshToken)
+        RefreshToken token = refreshTokenRepository.findById(refreshToken)
                         .orElseThrow(() -> new TokenNotFoundException("Refresh token not found or expired"));
         refreshTokenRepository.delete(token);
     }

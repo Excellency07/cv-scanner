@@ -1,6 +1,8 @@
 package com.backend.cv_scanner.parser;
 
+import com.backend.cv_scanner.exception.CVParsingException;
 import org.apache.tika.Tika;
+import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.springframework.stereotype.Component;
@@ -22,15 +24,22 @@ public class CVTextExtractor {
         Metadata metadata = new Metadata();
         metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, filename);
 
+        String text;
         try {
-            return tika.parseToString(
+            text = tika.parseToString(
                     inputStream,
                     metadata,
                     MAX_LENGTH
             );
-        } catch (org.apache.tika.exception.TikaException e) {
-            throw new IOException("Failed to extract text from " + filename, e);
+        } catch (TikaException e) {
+            throw new CVParsingException("Failed to extract text from " + filename, e);
         }
+
+        if (text == null || text.isBlank()) {
+            throw new CVParsingException("No readable text found in " + filename);
+        }
+
+        return text;
     }
 
 }

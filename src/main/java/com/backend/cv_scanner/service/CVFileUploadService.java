@@ -37,7 +37,7 @@ public class CVFileUploadService {
 
     private static final Logger log = LoggerFactory.getLogger(CVFileUploadService.class);
 
-    private static final int MAX_ENTRIES = 1000;
+    private static final int MAX_ENTRIES = 5000;
 
     private static final long MAX_FILE_SIZE = 20L * 1024 * 1024;
 
@@ -49,11 +49,11 @@ public class CVFileUploadService {
 
     private final StorageService storageService;
 
-    public CVBatchUploadResponse upload(MultipartFile zipFile) {
+    public CVBatchUploadResponse upload(MultipartFile zipFile, String uploadedBy) {
 
         String originalFilename = validateZip(zipFile);
 
-        CVBatch batch = new CVBatch(originalFilename);
+        CVBatch batch = new CVBatch(originalFilename, uploadedBy);
         batch.setStatus(CVBatchStatus.UPLOADING);
 
         batch = cvBatchRepository.save(batch);
@@ -168,21 +168,21 @@ public class CVFileUploadService {
             );
         }
 
+        if (uploadedFiles == 0) {
+
+            markBatchFailed(batch, uploadedFiles, failedFiles);
+
+            throw new CVBatchUploadException(
+                    failedFiles > 0
+                            ? "None of the CVs in the ZIP could be stored"
+                            : "ZIP does not contain any PDF or DOCX files"
+            );
+        }
+
         batch.setTotal(uploadedFiles + failedFiles);
         batch.setFailedFiles(failedFiles);
-
-        if (uploadedFiles == 0 && failedFiles > 0) {
-
-            batch.setStatus(CVBatchStatus.FAILED);
-
-        } else if (failedFiles > 0) {
-
-            batch.setStatus(CVBatchStatus.COMPLETED_WITH_ERRORS);
-
-        } else {
-
-            batch.setStatus(CVBatchStatus.PENDING);
-        }
+        // ready to be processed: POST /api/cv-batches/{id}/process
+        batch.setStatus(CVBatchStatus.PENDING);
 
         cvBatchRepository.save(batch);
 
@@ -288,6 +288,11 @@ public class CVFileUploadService {
     }
 
     private boolean isSupportedFile(String filename) {
+
+        // hidden files, e.g. macOS "__MACOSX/._cv.pdf" metadata, are not real CVs
+        if (filename.isEmpty() || filename.startsWith(".")) {
+            return false;
+        }
 
         String lower = filename.toLowerCase(Locale.ROOT);
 

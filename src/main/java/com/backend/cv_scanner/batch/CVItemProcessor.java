@@ -17,7 +17,10 @@ public class CVItemProcessor implements ItemProcessor<CVFile, Candidate> {
     @Override
     public Candidate process(CVFile file) throws Exception {
 
-        file.setStatus(CVFileStatus.PROCESSING);
+        // Already parsed by an earlier run of this batch (re-run after failures): returning null filters it out
+        if (file.getStatus() == CVFileStatus.COMPLETED) {
+            return null;
+        }
 
         return cvParsingService.parse(file);
     }

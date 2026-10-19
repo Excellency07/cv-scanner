@@ -37,13 +37,25 @@ public class CVBatch {
     @Column(name = "failed_files", nullable = false)
     private int failedFiles;
 
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "job_execution_id")
+    private Long jobExecutionId;
+
+    @Column(name = "started_at")
+    private Instant startedAt;
+
+    @Column(name = "finished_at")
+    private Instant finishedAt;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
 
-    public CVBatch(String originalFilename) {
+    public CVBatch(String originalFilename, String createdBy) {
         this.originalFilename = originalFilename;
+        this.createdBy = createdBy;
     }
-
 
 }

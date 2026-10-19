@@ -7,6 +7,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -61,6 +63,66 @@ public class GlobalExceptionHandler {
         );
 
         return new ResponseEntity<>(responseDto, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler({CVBatchNotFoundException.class, CandidateNotFoundException.class})
+    public ResponseEntity<ErrorResponseDto> handleNotFoundException(RuntimeException exception) {
+        ErrorResponseDto responseDto = new ErrorResponseDto(
+                Instant.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "Not Found",
+                exception.getMessage()
+        );
+
+        return new ResponseEntity<>(responseDto, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InvalidBatchStateException.class)
+    public ResponseEntity<ErrorResponseDto> handleInvalidBatchStateException(RuntimeException exception) {
+        ErrorResponseDto responseDto = new ErrorResponseDto(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "Conflict",
+                exception.getMessage()
+        );
+
+        return new ResponseEntity<>(responseDto, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler({CVBatchUploadException.class, IllegalArgumentException.class})
+    public ResponseEntity<ErrorResponseDto> handleBadRequestException(RuntimeException exception) {
+        ErrorResponseDto responseDto = new ErrorResponseDto(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                exception.getMessage()
+        );
+
+        return new ResponseEntity<>(responseDto, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponseDto> handleTypeMismatchException(MethodArgumentTypeMismatchException exception) {
+        ErrorResponseDto responseDto = new ErrorResponseDto(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Invalid value '" + exception.getValue() + "' for parameter '" + exception.getName() + "'"
+        );
+
+        return new ResponseEntity<>(responseDto, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponseDto> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException exception) {
+        ErrorResponseDto responseDto = new ErrorResponseDto(
+                Instant.now(),
+                HttpStatus.CONTENT_TOO_LARGE.value(),
+                "Payload Too Large",
+                "Uploaded file exceeds the maximum allowed size"
+        );
+
+        return new ResponseEntity<>(responseDto, HttpStatus.CONTENT_TOO_LARGE);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -34,7 +34,10 @@ public class CVItemWriter implements ItemWriter<Candidate> {
 
         List<CVFile> processedFiles = candidates.stream()
                 .map(Candidate::getFile)
-                .peek(file -> file.setStatus(CVFileStatus.COMPLETED))
+                .peek(file -> {
+                    file.setStatus(CVFileStatus.COMPLETED);
+                    file.setErrorMessage(null);
+                })
                 .toList();
 
         cvFileRepository.saveAll(processedFiles);

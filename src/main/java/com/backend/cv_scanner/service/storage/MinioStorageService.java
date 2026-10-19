@@ -42,7 +42,7 @@ public class MinioStorageService implements StorageService {
                     .build();
             minioClient.putObject(object);
         } catch (MinioException e) {
-            throw new StorageException("Failed to upload file");
+            throw new StorageException("Failed to upload file", e);
         }
     }
 
@@ -55,7 +55,7 @@ public class MinioStorageService implements StorageService {
                     .build();
             return minioClient.getObject(object);
         } catch (Exception e) {
-            throw new StorageException("Failed to download file");
+            throw new StorageException("Failed to download file: " + storageName, e);
         }
     }
 
@@ -68,7 +68,7 @@ public class MinioStorageService implements StorageService {
                     .build();
             minioClient.removeObject(object);
         } catch (Exception e) {
-            throw new StorageException("Failed to delete file");
+            throw new StorageException("Failed to delete file: " + storageName, e);
         }
     }
 }

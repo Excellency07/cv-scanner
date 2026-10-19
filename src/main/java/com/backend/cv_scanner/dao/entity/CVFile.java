@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
+@BatchSize(size = 100)
 @Table(name = "cv_files")
 public class CVFile {
     @Id
@@ -39,8 +41,8 @@ public class CVFile {
     @Column(nullable = false)
     private CVFileStatus status;
 
-    @OneToOne(mappedBy = "file")
-    private Candidate candidate;
+    @Column(name = "error_message", length = 1000)
+    private String errorMessage;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

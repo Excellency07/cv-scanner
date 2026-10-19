@@ -80,7 +80,7 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new AppAccountNotFoundException("Account not found"));
 
         if (!passwordEncoder.matches(requestDto.currentPassword(), account.getPassword())) throw new InvalidPasswordException("Current password is not valid");
-        account.setPassword(passwordEncoder.encode(requestDto.currentPassword()));
+        account.setPassword(passwordEncoder.encode(requestDto.newPassword()));
         accountRepository.save(account);
     }
 
